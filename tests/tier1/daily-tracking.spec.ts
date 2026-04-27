@@ -23,8 +23,9 @@ test.describe('Daily Tracking Flow @tier1', () => {
     const res = await api.get(`/v1/activities/daily?date=${today}`);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { activities: unknown[] };
-    expect(Array.isArray(body.activities)).toBe(true);
+    // Activities endpoint returns an array directly, not wrapped in { activities: [] }
+    const body = await res.json() as Array<{ id: string; type: string; calories: number }>;
+    expect(Array.isArray(body)).toBe(true);
   });
 
   test('GET /v1/meals/daily/macros - gets daily macro summary', async () => {
@@ -33,10 +34,14 @@ test.describe('Daily Tracking Flow @tier1', () => {
 
     expect(res.status).toBe(200);
     const body = await res.json() as {
-      consumed: { calories: number };
-      target: { calories: number };
+      date: string;
+      consumed_calories: number;
+      target_calories: number;
+      consumed_macros: { protein: number; carbs: number; fat: number };
+      target_macros: { protein: number; carbs: number; fat: number };
     };
-    expect(body.consumed).toBeDefined();
-    expect(body.target).toBeDefined();
+    expect(body.date).toBe(today);
+    expect(typeof body.consumed_calories).toBe('number');
+    expect(typeof body.target_calories).toBe('number');
   });
 });

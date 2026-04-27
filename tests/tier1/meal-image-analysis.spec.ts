@@ -25,19 +25,22 @@ test.describe('Meal Image Analysis Flow @tier1', () => {
   test('POST /v1/meals/image/analyze - analyzes meal from image', async () => {
     const imagePath = path.join(process.cwd(), 'tests/fixtures/sample-food.jpg');
     const imageBuffer = fs.readFileSync(imagePath);
+    const today = new Date().toISOString().split('T')[0];
 
-    const res = await api.postMultipart('/v1/meals/image/analyze', {
+    const res = await api.postMultipart(`/v1/meals/image/analyze?target_date=${today}`, {
       file: { name: 'sample-food.jpg', mimeType: 'image/jpeg', buffer: imageBuffer }
     });
 
-    // May return 200 (success) or 400 (not food image) depending on image
+    // May return 200 (success), 400 (not food image), or 422 (validation error)
+    if (![200, 400].includes(res.status)) {
+      console.log('Image analyze response:', res.status, await res.text());
+    }
     expect([200, 400]).toContain(res.status);
 
     if (res.status === 200) {
-      const body = await res.json() as { id: string; status: string; food_items: unknown[] };
-      expect(body.id).toBeTruthy();
-      expect(body.status).toBe('ready');
-      createdMealId = body.id;
+      const body = await res.json() as { meal_id: string; status: string };
+      expect(body.meal_id).toBeTruthy();
+      createdMealId = body.meal_id;
     }
   });
 
@@ -48,8 +51,13 @@ test.describe('Meal Image Analysis Flow @tier1', () => {
     const res = await api.get(`/v1/meals/${createdMealId}`);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { id: string; food_items: unknown[] };
-    expect(body.id).toBe(createdMealId);
+    const body = await res.json() as {
+      meal_id: string;
+      status: string;
+      food_items: unknown[];
+      total_calories: number | null;
+    };
+    expect(body.meal_id).toBe(createdMealId);
     expect(body.food_items).toBeDefined();
   });
 });

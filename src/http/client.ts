@@ -15,12 +15,12 @@ export async function createApiClient(args: {
   idToken: string;
   e2eRunId: string;
 }): Promise<ApiClient> {
+  // Create context without content-type header (set per-request)
   const ctx = await playwrightRequest.newContext({
     baseURL: args.baseUrl,
     extraHTTPHeaders: {
       authorization: `Bearer ${args.idToken}`,
-      'x-e2e-run-id': args.e2eRunId,
-      'content-type': 'application/json'
+      'x-e2e-run-id': args.e2eRunId
     }
   });
 
@@ -34,7 +34,10 @@ export async function createApiClient(args: {
       };
     },
     post: async (path: string, body?: unknown) => {
-      const res = await ctx.post(path, body === undefined ? undefined : { data: body });
+      const res = await ctx.post(path, body === undefined ? undefined : {
+        data: body,
+        headers: { 'content-type': 'application/json' }
+      });
       return {
         status: res.status(),
         json: async () => await res.json(),
@@ -42,7 +45,10 @@ export async function createApiClient(args: {
       };
     },
     put: async (path: string, body?: unknown) => {
-      const res = await ctx.put(path, body === undefined ? undefined : { data: body });
+      const res = await ctx.put(path, body === undefined ? undefined : {
+        data: body,
+        headers: { 'content-type': 'application/json' }
+      });
       return {
         status: res.status(),
         json: async () => await res.json(),
