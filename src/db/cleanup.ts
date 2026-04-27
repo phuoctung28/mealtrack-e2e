@@ -1,18 +1,22 @@
 import { getPool, closePool } from './connection.js';
 
-const E2E_EMAIL_PATTERN = '%@e2e-test.local';
+export type CleanupOptions = {
+  databaseUrl: string;
+  firebaseUid: string;
+};
 
-export async function cleanupTestData(databaseUrl: string): Promise<void> {
+export async function cleanupTestData(options: CleanupOptions): Promise<void> {
+  const { databaseUrl, firebaseUid } = options;
   const pool = getPool(databaseUrl);
 
   try {
-    // Delete all test users and let cascades handle related rows.
-    // The pattern matches any email ending with @e2e-test.local.
+    // Delete test user by firebase_uid (more reliable than email).
+    // Cascades handle related rows (meals, profiles, etc.)
     const result = await pool.query(
-      `DELETE FROM users WHERE email LIKE $1`,
-      [E2E_EMAIL_PATTERN]
+      `DELETE FROM users WHERE firebase_uid = $1`,
+      [firebaseUid]
     );
-    console.log(`Deleted ${result.rowCount} test user(s) matching '${E2E_EMAIL_PATTERN}'`);
+    console.log(`Deleted ${result.rowCount} test user(s) with firebase_uid '${firebaseUid}'`);
   } finally {
     await closePool();
   }
@@ -21,12 +25,18 @@ export async function cleanupTestData(databaseUrl: string): Promise<void> {
 // Allow running as a standalone script: ts-node --esm src/db/cleanup.ts
 if (process.argv[1] && process.argv[1].includes('cleanup')) {
   const databaseUrl = (process.env.DATABASE_URL ?? '').trim();
+  const firebaseUid = (process.env.E2E_UID ?? '').trim();
+
   if (!databaseUrl) {
     console.error('Error: DATABASE_URL environment variable is required');
     process.exit(1);
   }
+  if (!firebaseUid) {
+    console.error('Error: E2E_UID environment variable is required');
+    process.exit(1);
+  }
 
-  cleanupTestData(databaseUrl)
+  cleanupTestData({ databaseUrl, firebaseUid })
     .then(() => {
       console.log('Cleanup complete');
       process.exit(0);

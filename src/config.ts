@@ -1,4 +1,7 @@
-const STAGING_ALLOWLIST = new Set<string>(['https://mealtrack-backend-main.onrender.com']);
+const STAGING_ALLOWLIST = new Set<string>([
+  'https://mealtrack-backend-main.onrender.com',
+  'http://localhost:8000'
+]);
 
 export type Env = {
   baseUrl: string;
@@ -38,8 +41,8 @@ export function readEnv(): Env {
   const databaseUrl = (process.env.DATABASE_URL ?? '').trim();
   if (!databaseUrl) throw new Error('Missing DATABASE_URL');
 
+  // Optional - webhook tests will skip if not configured
   const revenuecatWebhookSecret = (process.env.REVENUECAT_WEBHOOK_SECRET ?? '').trim();
-  if (!revenuecatWebhookSecret) throw new Error('Missing REVENUECAT_WEBHOOK_SECRET');
 
   return {
     baseUrl,
