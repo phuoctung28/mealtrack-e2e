@@ -61,15 +61,7 @@ export async function createApiClient(args: {
       path: string,
       fields: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>
     ) => {
-      const formData: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(fields)) {
-        if (typeof value === 'string') {
-          formData[key] = value;
-        } else {
-          formData[key] = value;
-        }
-      }
-      const res = await ctx.post(path, { multipart: formData });
+      const res = await ctx.post(path, { multipart: fields });
       return {
         status: res.status(),
         json: async () => await res.json(),
