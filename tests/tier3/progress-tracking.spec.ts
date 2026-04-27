@@ -43,6 +43,7 @@ test.describe('Progress Tracking @tier3', () => {
     expect(res.status).toBe(200);
     const body = await res.json() as { remaining_days: number; adjusted_daily_target: unknown };
     expect(body.remaining_days).toBeGreaterThan(0);
+    expect(body.adjusted_daily_target).toBeDefined();
   });
 });
 
