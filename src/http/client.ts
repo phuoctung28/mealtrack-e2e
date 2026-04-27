@@ -1,11 +1,13 @@
 import { request as playwrightRequest } from '@playwright/test';
 
+type ApiResponse = { status: number; json: () => Promise<unknown>; text: () => Promise<string> };
+
 export type ApiClient = {
-  get: (path: string) => Promise<{ status: number; json: () => Promise<unknown>; text: () => Promise<string> }>;
-  post: (
-    path: string,
-    body?: unknown
-  ) => Promise<{ status: number; json: () => Promise<unknown>; text: () => Promise<string> }>;
+  get: (path: string) => Promise<ApiResponse>;
+  post: (path: string, body?: unknown) => Promise<ApiResponse>;
+  put: (path: string, body?: unknown) => Promise<ApiResponse>;
+  delete: (path: string) => Promise<ApiResponse>;
+  postMultipart: (path: string, fields: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>) => Promise<ApiResponse>;
 };
 
 export async function createApiClient(args: {
@@ -38,7 +40,41 @@ export async function createApiClient(args: {
         json: async () => await res.json(),
         text: async () => await res.text()
       };
+    },
+    put: async (path: string, body?: unknown) => {
+      const res = await ctx.put(path, body === undefined ? undefined : { data: body });
+      return {
+        status: res.status(),
+        json: async () => await res.json(),
+        text: async () => await res.text()
+      };
+    },
+    delete: async (path: string) => {
+      const res = await ctx.delete(path);
+      return {
+        status: res.status(),
+        json: async () => await res.json(),
+        text: async () => await res.text()
+      };
+    },
+    postMultipart: async (
+      path: string,
+      fields: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>
+    ) => {
+      const formData: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(fields)) {
+        if (typeof value === 'string') {
+          formData[key] = value;
+        } else {
+          formData[key] = value;
+        }
+      }
+      const res = await ctx.post(path, { multipart: formData });
+      return {
+        status: res.status(),
+        json: async () => await res.json(),
+        text: async () => await res.text()
+      };
     }
   };
 }
-

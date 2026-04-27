@@ -6,6 +6,8 @@ export type Env = {
   firebaseServiceAccountJson: string;
   e2eUid: string;
   e2eConfirmStaging: boolean;
+  databaseUrl: string;
+  revenuecatWebhookSecret: string;
 };
 
 export function readEnv(): Env {
@@ -33,12 +35,20 @@ export function readEnv(): Env {
     throw new Error('Refusing to run in CI without E2E_CONFIRM_STAGING=1');
   }
 
+  const databaseUrl = (process.env.DATABASE_URL ?? '').trim();
+  if (!databaseUrl) throw new Error('Missing DATABASE_URL');
+
+  const revenuecatWebhookSecret = (process.env.REVENUECAT_WEBHOOK_SECRET ?? '').trim();
+  if (!revenuecatWebhookSecret) throw new Error('Missing REVENUECAT_WEBHOOK_SECRET');
+
   return {
     baseUrl,
     firebaseWebApiKey,
     firebaseServiceAccountJson,
     e2eUid,
-    e2eConfirmStaging
+    e2eConfirmStaging,
+    databaseUrl,
+    revenuecatWebhookSecret
   };
 }
 

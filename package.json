@@ -2,14 +2,18 @@
   "name": "mealtrack-e2e",
   "version": "0.1.0",
   "private": true,
-  "description": "Staging-only API E2E smoke tests for Mealtrack backend (Firebase auth, real environment).",
+  "description": "E2E integration tests for Mealtrack backend",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "test": "playwright test",
-    "test:e2e": "playwright test -g \"@e2e\"",
+    "test:tier1": "playwright test --project=tier1",
+    "test:tier2": "playwright test --project=tier2",
+    "test:tier3": "playwright test --project=tier3",
+    "db:cleanup": "npx ts-node --esm src/db/cleanup.ts",
+    "db:seed": "npx ts-node --esm src/db/seed.ts",
     "lint": "eslint .",
     "format": "prettier -w ."
   },
@@ -17,13 +21,15 @@
     "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.55.0",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
     "eslint": "^9.0.0",
     "globals": "^16.0.0",
     "prettier": "^3.0.0",
+    "ts-node": "^10.9.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "firebase-admin": "^13.0.0"
+    "firebase-admin": "^13.0.0",
+    "pg": "^8.13.0"
   }
 }
-
