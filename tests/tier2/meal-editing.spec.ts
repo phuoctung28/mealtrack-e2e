@@ -29,8 +29,15 @@ test.describe('Meal Editing Flow @tier2', () => {
         custom_nutrition: { calories: 500, protein_g: 30, carbs_g: 40, fat_g: 20 }
       }]
     });
+    expect(res.status).toBe(201);
     const body = await res.json() as { id: string };
     testMealId = body.id;
+  });
+
+  test.afterAll(async () => {
+    if (testMealId && api) {
+      await api.delete(`/v1/meals/${testMealId}`);
+    }
   });
 
   test('PUT /v1/meals/{id}/ingredients - edits meal ingredients', async () => {

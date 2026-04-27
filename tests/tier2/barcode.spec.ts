@@ -34,6 +34,7 @@ test.describe('Barcode Lookup Flow @tier2', () => {
   test('GET /v1/foods/{fdc_id}/details - gets food details', async () => {
     // First search for a food to get an FDC ID
     const searchRes = await api.get('/v1/foods/search?q=apple');
+    expect(searchRes.status).toBe(200);
     const searchBody = await searchRes.json() as { foods: Array<{ fdc_id: string }> };
 
     test.skip(searchBody.foods.length === 0, 'No foods found in search');

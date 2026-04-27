@@ -6,6 +6,7 @@ import { createApiClient, ApiClient } from '../../src/http/client.js';
 
 test.describe('Notifications Flow @tier2', () => {
   let api: ApiClient;
+  let tokenRegistered = false;
   const e2eRunId = crypto.randomUUID();
   const testFcmToken = `e2e-test-token-${crypto.randomUUID()}`;
 
@@ -27,6 +28,7 @@ test.describe('Notifications Flow @tier2', () => {
     });
 
     expect(res.status).toBe(201);
+    tokenRegistered = true;
   });
 
   test('PUT /v1/notifications/preferences - updates notification preferences', async () => {
@@ -45,6 +47,7 @@ test.describe('Notifications Flow @tier2', () => {
   });
 
   test('DELETE /v1/notifications/tokens - deletes FCM token', async () => {
+    test.skip(!tokenRegistered, 'Token registration did not succeed');
     const res = await api.delete('/v1/notifications/tokens');
 
     expect(res.status).toBe(200);
