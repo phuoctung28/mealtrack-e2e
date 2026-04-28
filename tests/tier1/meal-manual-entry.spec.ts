@@ -51,31 +51,34 @@ test.describe('Manual Meal Entry Flow @tier1', () => {
     expect(body.query).toBe('chicken');
   });
 
-  test.skip('POST /v1/meals/manual - creates manual meal from foods', async () => {
-    // TODO: This endpoint may not exist or has different schema
-    // Skipping until we can verify the correct endpoint and request format
+  test('POST /v1/meals/manual - creates manual meal from foods', async () => {
     const today = new Date().toISOString().split('T')[0];
 
     const res = await api.post('/v1/meals/manual', {
+      dish_name: 'E2E Test Scrambled Eggs',
       target_date: today,
+      meal_type: 'breakfast',
+      source: 'manual',
       items: [
         {
           name: 'Scrambled Eggs',
-          quantity: 2,
-          unit: 'large',
+          quantity: 150,
+          unit: 'g',
           custom_nutrition: {
-            calories: 180,
-            protein_g: 12,
-            carbs_g: 2,
-            fat_g: 14
+            protein_per_100g: 13,
+            carbs_per_100g: 1,
+            fat_per_100g: 11
           }
         }
       ]
     });
 
-    expect(res.status).toBe(201);
-    const body = await res.json() as { id: string; status: string };
-    expect(body.id).toBeTruthy();
-    createdMealId = body.id;
+    if (res.status !== 200 && res.status !== 201) {
+      console.log('Manual meal response:', res.status, await res.text());
+    }
+    expect([200, 201]).toContain(res.status);
+    const body = await res.json() as { meal_id: string; status: string; message: string };
+    expect(body.meal_id).toBeTruthy();
+    createdMealId = body.meal_id;
   });
 });
