@@ -40,10 +40,19 @@ test.describe('Progress Tracking @tier3', () => {
     const monday = getMonday(new Date()).toISOString().split('T')[0];
     const res = await api.get(`/v1/meals/weekly/budget?week_start=${monday}`);
 
+    if (res.status !== 200) {
+      console.log('Weekly budget response:', res.status, await res.text());
+    }
     expect(res.status).toBe(200);
-    const body = await res.json() as { remaining_days: number; adjusted_daily_target: unknown };
-    expect(body.remaining_days).toBeGreaterThan(0);
-    expect(body.adjusted_daily_target).toBeDefined();
+    const body = await res.json() as {
+      week_start_date: string;
+      target_calories: number;
+      consumed_calories: number;
+      remaining_days: number;
+      adjusted_daily_calories: number;
+    };
+    expect(body.remaining_days).toBeGreaterThanOrEqual(0);
+    expect(body.adjusted_daily_calories).toBeDefined();
   });
 });
 

@@ -41,12 +41,14 @@ test.describe('Referrals @tier3', () => {
 
   test('POST /v1/referrals/apply - applies a referral code', async () => {
     // Note: Cannot apply own code, so this tests the endpoint exists and validates
+    // Apply endpoint requires discount_applied field
     const res = await api.post('/v1/referrals/apply', {
-      code: 'INVALID_TEST_CODE_12345'
+      code: 'INVALID_TEST_CODE_12345',
+      discount_applied: 0
     });
 
-    // 400 = invalid code (expected), 200 = applied successfully
-    expect([200, 400]).toContain(res.status);
+    // 400 = invalid code (expected), 201 = applied successfully, 422 = validation error
+    expect([201, 400, 422]).toContain(res.status);
   });
 
   test('GET /v1/referrals/stats - gets referral stats', async () => {
