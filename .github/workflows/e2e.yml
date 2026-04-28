@@ -4,8 +4,6 @@ on:
   repository_dispatch:
     types: [run-e2e]
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * *'
 
 jobs:
   e2e:

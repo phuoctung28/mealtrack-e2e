@@ -1,9 +1,9 @@
 name: Staging E2E (API)
 
 on:
-  workflow_dispatch: {}
-  schedule:
-    - cron: "0 2 * * *" # nightly
+  repository_dispatch:
+    types: [run-e2e]
+  workflow_dispatch:
 
 jobs:
   e2e:
