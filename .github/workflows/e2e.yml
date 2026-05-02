@@ -32,14 +32,14 @@ jobs:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         run: |
           doppler run --project mealtrack-e2e --config ci -- \
-            npx ts-node --esm src/db/cleanup.ts
+            npx tsx src/db/cleanup.ts
 
       - name: Seed test data
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         run: |
           doppler run --project mealtrack-e2e --config ci -- \
-            npx ts-node --esm src/db/seed.ts
+            npx tsx src/db/seed.ts
 
       - name: Run E2E tests
         env:
@@ -63,4 +63,4 @@ jobs:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         run: |
           doppler run --project mealtrack-e2e --config ci -- \
-            npx ts-node --esm src/db/cleanup.ts
+            npx tsx src/db/cleanup.ts
