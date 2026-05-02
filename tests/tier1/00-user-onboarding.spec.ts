@@ -86,17 +86,8 @@ test.describe('User Onboarding Flow @tier1', () => {
       goal: 'recomp'
     });
 
-    // Note: This test may fail with 404 if the auth cache has stale data from a previous test run.
-    // The cache TTL is 10 minutes. If this fails, wait for cache expiry and retry.
-    // See: backend/src/domain/cache/cache_keys.py - TTL_10_MIN for auth:uid:{firebase_uid}
-    if (res.status === 404) {
-      const body = await res.json();
-      if (body?.detail?.error_code === 'ResourceNotFoundException') {
-        test.skip();
-        return;
-      }
-    }
-    expect(res.status).toBe(200);
+    // Fail explicitly - if cache has stale data, that's a bug to fix, not mask
+    expect(res.status, `Expected 200 but got ${res.status}: ${res.responseBody}`).toBe(200);
     const body = await res.json();
     expect(body).toBe(true);
   });

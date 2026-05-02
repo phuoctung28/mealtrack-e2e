@@ -19,20 +19,32 @@ export async function seedTestUser(options: SeedOptions): Promise<void> {
   const pool = getPool(databaseUrl);
 
   try {
-    await pool.query(
-      `INSERT INTO users (
-         id, firebase_uid, email, username, password_hash, display_name,
-         provider, is_active, onboarding_completed, last_accessed,
-         timezone, language_code, created_at, updated_at
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, 'google', true, false, NOW(), 'UTC', 'en', NOW(), NOW())
-       ON CONFLICT (firebase_uid) DO UPDATE
-         SET email        = EXCLUDED.email,
-             display_name = EXCLUDED.display_name,
-             updated_at   = NOW()`,
-      [id, firebaseUid, resolvedEmail, username, dummyPasswordHash, resolvedName]
+    // Check if user exists
+    const existing = await pool.query(
+      `SELECT id FROM users WHERE firebase_uid = $1`,
+      [firebaseUid]
     );
-    console.log(`Seeded test user: firebase_uid=${firebaseUid}, email=${resolvedEmail}`);
+
+    if (existing.rows.length > 0) {
+      // User exists - just ensure provider is correct
+      await pool.query(
+        `UPDATE users SET provider = 'GOOGLE', updated_at = NOW() WHERE firebase_uid = $1`,
+        [firebaseUid]
+      );
+      console.log(`Updated existing test user: firebase_uid=${firebaseUid}, id=${existing.rows[0].id}`);
+    } else {
+      // Create new user
+      await pool.query(
+        `INSERT INTO users (
+           id, firebase_uid, email, username, password_hash, display_name,
+           provider, is_active, onboarding_completed, last_accessed,
+           timezone, language_code, created_at, updated_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, 'GOOGLE', true, false, NOW(), 'UTC', 'en', NOW(), NOW())`,
+        [id, firebaseUid, resolvedEmail, username, dummyPasswordHash, resolvedName]
+      );
+      console.log(`Created new test user: firebase_uid=${firebaseUid}, id=${id}`);
+    }
   } finally {
     await closePool();
   }

@@ -10,23 +10,42 @@ export async function cleanupTestData(options: CleanupOptions): Promise<void> {
   const pool = getPool(databaseUrl);
 
   try {
-    // Delete referral-related tables first (no cascade configured)
-    const tables = ['referral_wallets', 'referral_codes'];
-    for (const table of tables) {
+    // Get user_id for cleanup
+    const userResult = await pool.query(
+      `SELECT id FROM users WHERE firebase_uid = $1`,
+      [firebaseUid]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.log(`No user found with firebase_uid '${firebaseUid}' - nothing to clean`);
+      return;
+    }
+
+    const userId = userResult.rows[0].id;
+    console.log(`Cleaning up data for user_id: ${userId}`);
+
+    // Clean up test data without deleting the user (preserves Redis cache)
+    const tablesToClean = [
+      'meal',
+      'user_profiles',
+      'referral_wallets',
+      'referral_codes',
+    ];
+
+    for (const table of tablesToClean) {
       const res = await pool.query(
-        `DELETE FROM ${table} WHERE user_id IN (SELECT id FROM users WHERE firebase_uid = $1)`,
-        [firebaseUid]
+        `DELETE FROM ${table} WHERE user_id = $1`,
+        [userId]
       );
       console.log(`Deleted ${res.rowCount} row(s) from ${table}`);
     }
 
-    // Delete test user by firebase_uid (more reliable than email).
-    // Cascades handle related rows (meals, profiles, etc.)
-    const result = await pool.query(
-      `DELETE FROM users WHERE firebase_uid = $1`,
-      [firebaseUid]
+    // Reset user state without deleting
+    await pool.query(
+      `UPDATE users SET onboarding_completed = false, provider = 'GOOGLE' WHERE id = $1`,
+      [userId]
     );
-    console.log(`Deleted ${result.rowCount} test user(s) with firebase_uid '${firebaseUid}'`);
+    console.log(`Reset user state for firebase_uid '${firebaseUid}'`);
   } finally {
     await closePool();
   }

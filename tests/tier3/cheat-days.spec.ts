@@ -22,12 +22,8 @@ test.describe('Cheat Days @tier3', () => {
   test('POST /v1/cheat-days - marks a cheat day', async () => {
     const res = await api.post(`/v1/cheat-days?date=${testDate}`);
 
-    // Server may return 500 due to timezone bug - skip in that case
-    if (res.status >= 500) {
-      console.log('Server error on cheat day marking:', res.status);
-      test.skip();
-      return;
-    }
+    // Fail explicitly on server errors - don't mask bugs
+    expect(res.status, `Server error: ${res.responseBody}`).toBeLessThan(500);
     if (![200, 201, 400].includes(res.status)) {
       console.log('Mark cheat day response:', res.status, await res.text());
     }

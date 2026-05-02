@@ -43,11 +43,11 @@ test.describe('Meal Editing Flow @tier2', () => {
       const body = await res.json() as { meal_id: string };
       testMealId = body.meal_id;
     }
-    // If meal creation fails, tests will be skipped
+    expect(testMealId, 'beforeAll must create a test meal').toBeTruthy();
   });
 
   test('PUT /v1/meals/{id}/ingredients - edits meal ingredients', async () => {
-    test.skip(!testMealId, 'No test meal available');
+    expect(testMealId, 'Test meal must exist from beforeAll').toBeTruthy();
 
     const res = await api.put(`/v1/meals/${testMealId}/ingredients`, {
       food_item_changes: [{
@@ -70,7 +70,7 @@ test.describe('Meal Editing Flow @tier2', () => {
   });
 
   test('DELETE /v1/meals/{id} - deletes meal (soft delete)', async () => {
-    test.skip(!testMealId, 'No test meal created');
+    expect(testMealId, 'Test meal must exist from beforeAll').toBeTruthy();
 
     const res = await api.delete(`/v1/meals/${testMealId}`);
 

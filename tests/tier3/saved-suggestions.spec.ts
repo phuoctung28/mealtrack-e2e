@@ -35,12 +35,8 @@ test.describe('Saved Suggestions @tier3', () => {
       }
     });
 
-    // Server may return 500 due to timezone bug - skip in that case
-    if (res.status >= 500) {
-      console.log('Server error on save suggestion:', res.status);
-      test.skip();
-      return;
-    }
+    // Fail explicitly on server errors - don't mask bugs
+    expect(res.status, `Server error: ${res.responseBody}`).toBeLessThan(500);
     if (res.status !== 200 && res.status !== 201) {
       console.log('Save suggestion response:', res.status, await res.text());
     }
@@ -65,7 +61,7 @@ test.describe('Saved Suggestions @tier3', () => {
   });
 
   test('DELETE /v1/saved-suggestions/{id} - removes bookmark', async () => {
-    test.skip(!savedSuggestionId, 'No saved suggestion to delete');
+    expect(savedSuggestionId, 'Previous test must create a saved suggestion').toBeTruthy();
 
     const res = await api.delete(`/v1/saved-suggestions/${savedSuggestionId}`);
 

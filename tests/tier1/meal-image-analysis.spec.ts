@@ -45,8 +45,7 @@ test.describe('Meal Image Analysis Flow @tier1', () => {
   });
 
   test('GET /v1/meals/{id} - gets meal detail', async () => {
-    // Skip if no meal was created
-    test.skip(!createdMealId, 'No meal created from previous test');
+    expect(createdMealId, 'Previous test must create a meal (image analyze must return 200)').toBeTruthy();
 
     const res = await api.get(`/v1/meals/${createdMealId}`);
 
