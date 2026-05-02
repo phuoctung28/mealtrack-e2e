@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Install Doppler CLI
-        run: curl -Ls https://cli.doppler.com/install.sh | sh
+        run: curl -Ls https://cli.doppler.com/install.sh | sudo sh
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
