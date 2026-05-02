@@ -10,12 +10,15 @@ export async function cleanupTestData(options: CleanupOptions): Promise<void> {
   const pool = getPool(databaseUrl);
 
   try {
-    // Delete referral_codes first (no cascade configured)
-    const refResult = await pool.query(
-      `DELETE FROM referral_codes WHERE user_id IN (SELECT id FROM users WHERE firebase_uid = $1)`,
-      [firebaseUid]
-    );
-    console.log(`Deleted ${refResult.rowCount} referral code(s)`);
+    // Delete referral-related tables first (no cascade configured)
+    const tables = ['referral_wallets', 'referral_codes'];
+    for (const table of tables) {
+      const res = await pool.query(
+        `DELETE FROM ${table} WHERE user_id IN (SELECT id FROM users WHERE firebase_uid = $1)`,
+        [firebaseUid]
+      );
+      console.log(`Deleted ${res.rowCount} row(s) from ${table}`);
+    }
 
     // Delete test user by firebase_uid (more reliable than email).
     // Cascades handle related rows (meals, profiles, etc.)
