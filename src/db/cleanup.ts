@@ -25,14 +25,53 @@ export async function cleanupTestData(options: CleanupOptions): Promise<void> {
     console.log(`Cleaning up data for user_id: ${userId}`);
 
     // Clean up test data without deleting the user (preserves Redis cache)
-    const tablesToClean = [
-      'meal',
-      'user_profiles',
-      'referral_wallets',
-      'referral_codes',
-    ];
+    // First get meal IDs for this user (needed for child tables)
+    const mealResult = await pool.query(
+      `SELECT meal_id FROM meal WHERE user_id = $1`,
+      [userId]
+    );
+    const mealIds = mealResult.rows.map(r => r.meal_id);
 
-    for (const table of tablesToClean) {
+    if (mealIds.length > 0) {
+      // Get nutrition IDs for these meals
+      const nutritionResult = await pool.query(
+        `SELECT id FROM nutrition WHERE meal_id = ANY($1)`,
+        [mealIds]
+      );
+      const nutritionIds = nutritionResult.rows.map(r => r.id);
+
+      // Delete in FK order: food_item -> nutrition -> meal
+      if (nutritionIds.length > 0) {
+        const foodRes = await pool.query(
+          `DELETE FROM food_item WHERE nutrition_id = ANY($1)`,
+          [nutritionIds]
+        );
+        console.log(`Deleted ${foodRes.rowCount} row(s) from food_item`);
+      }
+
+      const nutRes = await pool.query(
+        `DELETE FROM nutrition WHERE meal_id = ANY($1)`,
+        [mealIds]
+      );
+      console.log(`Deleted ${nutRes.rowCount} row(s) from nutrition`);
+
+      // Delete other meal-related tables (skip if not exist)
+      for (const table of ['meal_translation']) {
+        try {
+          const res = await pool.query(
+            `DELETE FROM ${table} WHERE meal_id = ANY($1)`,
+            [mealIds]
+          );
+          console.log(`Deleted ${res.rowCount} row(s) from ${table}`);
+        } catch {
+          // Table might not exist - continue
+        }
+      }
+    }
+
+    // Now delete from user-related tables
+    const userTables = ['meal', 'user_profiles', 'referral_wallets', 'referral_codes'];
+    for (const table of userTables) {
       const res = await pool.query(
         `DELETE FROM ${table} WHERE user_id = $1`,
         [userId]
