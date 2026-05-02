@@ -27,8 +27,13 @@ export function readEnv(): Env {
   const firebaseWebApiKey = (process.env.FIREBASE_WEB_API_KEY ?? '').trim();
   if (!firebaseWebApiKey) throw new Error('Missing FIREBASE_WEB_API_KEY');
 
-  const firebaseServiceAccountJson = (process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? '').trim();
+  let firebaseServiceAccountJson = (process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? '').trim();
   if (!firebaseServiceAccountJson) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON');
+
+  // Auto-decode base64 if not raw JSON (handles Doppler escaping issues)
+  if (!firebaseServiceAccountJson.startsWith('{')) {
+    firebaseServiceAccountJson = Buffer.from(firebaseServiceAccountJson, 'base64').toString('utf-8');
+  }
 
   const e2eUid = (process.env.E2E_UID ?? 'e2e-bot').trim();
   if (!e2eUid) throw new Error('Missing/empty E2E_UID');
