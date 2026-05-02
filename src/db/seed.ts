@@ -2,45 +2,47 @@ import { getPool, closePool } from './connection.js';
 
 export type SeedOptions = {
   databaseUrl: string;
-  uid: string;
+  firebaseUid: string;
   email?: string;
   displayName?: string;
 };
 
 export async function seedTestUser(options: SeedOptions): Promise<void> {
-  const { databaseUrl, uid, email, displayName } = options;
-  const resolvedEmail = email ?? `${uid}@e2e-test.local`;
+  const { databaseUrl, firebaseUid, email, displayName } = options;
+  const resolvedEmail = email ?? `${firebaseUid}@e2e-test.local`;
   const resolvedName = displayName ?? 'E2E Test User';
+  const username = `e2e_${firebaseUid}`;
+  const dummyPasswordHash = '$2b$12$dummy.hash.for.e2e.testing.only';
 
   const pool = getPool(databaseUrl);
 
   try {
     await pool.query(
-      `INSERT INTO users (uid, email, display_name, created_at, updated_at)
-       VALUES ($1, $2, $3, NOW(), NOW())
-       ON CONFLICT (uid) DO UPDATE
+      `INSERT INTO users (firebase_uid, email, username, password_hash, display_name, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+       ON CONFLICT (firebase_uid) DO UPDATE
          SET email        = EXCLUDED.email,
              display_name = EXCLUDED.display_name,
              updated_at   = NOW()`,
-      [uid, resolvedEmail, resolvedName]
+      [firebaseUid, resolvedEmail, username, dummyPasswordHash, resolvedName]
     );
-    console.log(`Seeded test user: uid=${uid}, email=${resolvedEmail}`);
+    console.log(`Seeded test user: firebase_uid=${firebaseUid}, email=${resolvedEmail}`);
   } finally {
     await closePool();
   }
 }
 
-// Allow running as a standalone script: ts-node --esm src/db/seed.ts
+// Allow running as a standalone script: tsx src/db/seed.ts
 if (process.argv[1] && process.argv[1].includes('seed')) {
   const databaseUrl = (process.env.DATABASE_URL ?? '').trim();
-  const uid = (process.env.E2E_UID ?? 'e2e-bot').trim();
+  const firebaseUid = (process.env.E2E_UID ?? 'e2e-bot').trim();
 
   if (!databaseUrl) {
     console.error('Error: DATABASE_URL environment variable is required');
     process.exit(1);
   }
 
-  seedTestUser({ databaseUrl, uid })
+  seedTestUser({ databaseUrl, firebaseUid })
     .then(() => {
       console.log('Seed complete');
       process.exit(0);
