@@ -11,7 +11,7 @@ export function getPool(databaseUrl: string): pg.Pool {
       ssl: { rejectUnauthorized: false },
       max: 5,
       idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 5_000
+      connectionTimeoutMillis: 30_000
     });
   }
   return pool;

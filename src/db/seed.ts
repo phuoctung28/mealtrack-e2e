@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { getPool, closePool } from './connection.js';
 
 export type SeedOptions = {
@@ -13,18 +14,23 @@ export async function seedTestUser(options: SeedOptions): Promise<void> {
   const resolvedName = displayName ?? 'E2E Test User';
   const username = `e2e_${firebaseUid}`;
   const dummyPasswordHash = '$2b$12$dummy.hash.for.e2e.testing.only';
+  const id = crypto.randomUUID();
 
   const pool = getPool(databaseUrl);
 
   try {
     await pool.query(
-      `INSERT INTO users (firebase_uid, email, username, password_hash, display_name, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      `INSERT INTO users (
+         id, firebase_uid, email, username, password_hash, display_name,
+         provider, is_active, onboarding_completed, last_accessed,
+         timezone, language_code, created_at, updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, 'google', true, false, NOW(), 'UTC', 'en', NOW(), NOW())
        ON CONFLICT (firebase_uid) DO UPDATE
          SET email        = EXCLUDED.email,
              display_name = EXCLUDED.display_name,
              updated_at   = NOW()`,
-      [firebaseUid, resolvedEmail, username, dummyPasswordHash, resolvedName]
+      [id, firebaseUid, resolvedEmail, username, dummyPasswordHash, resolvedName]
     );
     console.log(`Seeded test user: firebase_uid=${firebaseUid}, email=${resolvedEmail}`);
   } finally {
