@@ -5,6 +5,14 @@ on:
     types: [run-e2e]
   workflow_dispatch:
 
+env:
+  E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+  FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+  FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  REVENUECAT_WEBHOOK_SECRET: ${{ secrets.REVENUECAT_WEBHOOK_SECRET }}
+  E2E_CONFIRM_STAGING: '1'
+
 jobs:
   e2e:
     name: e2e
@@ -21,33 +29,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Doppler CLI
-        run: curl -Ls https://cli.doppler.com/install.sh | sudo sh
-
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
       - name: Cleanup test database
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: |
-          doppler run --project mealtrack-e2e --config ci -- \
-            npx ts-node --esm src/db/cleanup.ts
+        run: npx ts-node --esm src/db/cleanup.ts
 
       - name: Seed test data
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: |
-          doppler run --project mealtrack-e2e --config ci -- \
-            npx ts-node --esm src/db/seed.ts
+        run: npx ts-node --esm src/db/seed.ts
 
       - name: Run E2E tests
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-          E2E_CONFIRM_STAGING: '1'
-        run: |
-          doppler run --project mealtrack-e2e --config ci -- \
-            npx playwright test --reporter=github,html
+        run: npx playwright test --reporter=github,html
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
@@ -59,8 +51,4 @@ jobs:
 
       - name: Cleanup test database
         if: always()
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: |
-          doppler run --project mealtrack-e2e --config ci -- \
-            npx ts-node --esm src/db/cleanup.ts
+        run: npx ts-node --esm src/db/cleanup.ts
