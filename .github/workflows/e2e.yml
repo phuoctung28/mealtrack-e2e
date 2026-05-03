@@ -5,6 +5,11 @@ on:
     types: [run-e2e]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   e2e:
     name: e2e
@@ -34,13 +39,6 @@ jobs:
           doppler run --project mealtrack-e2e --config ci -- \
             npx tsx src/db/cleanup.ts
 
-      - name: Seed test data
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: |
-          doppler run --project mealtrack-e2e --config ci -- \
-            npx tsx src/db/seed.ts
-
       - name: Run E2E tests
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
@@ -56,6 +54,25 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Setup Pages
+        if: always()
+        uses: actions/configure-pages@v4
+
+      - name: Upload to GitHub Pages
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: playwright-report/
+
+      - name: Deploy to GitHub Pages
+        if: always()
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Print report URL
+        if: always()
+        run: echo "📊 Report available at ${{ steps.deployment.outputs.page_url }}"
 
       - name: Cleanup test database
         if: always()
