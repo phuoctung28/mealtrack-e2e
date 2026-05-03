@@ -5,11 +5,6 @@ on:
     types: [run-e2e]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
   e2e:
     name: e2e
@@ -40,12 +35,45 @@ jobs:
             npx tsx src/db/cleanup.ts
 
       - name: Run E2E tests
+        id: tests
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
           E2E_CONFIRM_STAGING: '1'
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
         run: |
           doppler run --project mealtrack-e2e --config ci -- \
-            npx playwright test --reporter=github,html
+            npx playwright test --reporter=github,json,html || true
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🧪 E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f test-results.json ]; then
+            PASSED=$(jq '[.suites[]?.specs[]?.tests[]? | select(.status == "expected")] | length' test-results.json 2>/dev/null || echo "0")
+            FAILED=$(jq '[.suites[]?.specs[]?.tests[]? | select(.status == "unexpected")] | length' test-results.json 2>/dev/null || echo "0")
+            SKIPPED=$(jq '[.suites[]?.specs[]?.tests[]? | select(.status == "skipped")] | length' test-results.json 2>/dev/null || echo "0")
+            TOTAL=$((PASSED + FAILED + SKIPPED))
+
+            if [ "$FAILED" -gt 0 ]; then
+              echo "### ❌ $FAILED of $TOTAL tests failed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ✅ All $TOTAL tests passed" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | ❌ Failed | ⏭️ Skipped |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|----------|-----------|" >> $GITHUB_STEP_SUMMARY
+            echo "| $PASSED | $FAILED | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+
+            # Exit with failure if tests failed
+            if [ "$FAILED" -gt 0 ]; then
+              exit 1
+            fi
+          else
+            echo "⚠️ No test results file found" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
@@ -54,25 +82,6 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
-
-      - name: Setup Pages
-        if: always()
-        uses: actions/configure-pages@v4
-
-      - name: Upload to GitHub Pages
-        if: always()
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: playwright-report/
-
-      - name: Deploy to GitHub Pages
-        if: always()
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Print report URL
-        if: always()
-        run: echo "📊 Report available at ${{ steps.deployment.outputs.page_url }}"
 
       - name: Cleanup test database
         if: always()
